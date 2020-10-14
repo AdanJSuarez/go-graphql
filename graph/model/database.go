@@ -48,6 +48,16 @@ func (db *Database) InsertMeetup(name string, description string) {
 	}
 }
 
+// UpdateUser is ...
+func (db *Database) UpdateUser(user *User) (*User, error) {
+	resRow, err := db.dbConn.Query(`UPDATE "user" SET user_username=$1 user_email=$2 WHERE user_id=$3`, user.Username, user.Email, user.ID)
+	if err != nil {
+		return user, err
+	}
+	defer resRow.Close()
+	return user, nil
+}
+
 //GetMeetups is ...
 func (db *Database) GetMeetups() ([]*Meetup, error) {
 	resRows, err := db.dbConn.Query(`SELECT * FROM "meetup"`)
@@ -65,6 +75,52 @@ func (db *Database) GetMeetups() ([]*Meetup, error) {
 		listOfMeetups = append(listOfMeetups, &meetup)
 	}
 	return listOfMeetups, nil
+}
+
+// GetUsers is ...
+func (db *Database) GetUsers() ([]*User, error) {
+	resRows, err := db.dbConn.Query(`SELECT * FROM "user"`)
+	if err != nil {
+		return nil, err
+	}
+	defer resRows.Close()
+	listOfUsers := []*User{}
+	for resRows.Next() {
+		user := User{}
+		err := resRows.Scan(&user.ID, &user.Username, &user.Email)
+		if err != nil {
+			return nil, err
+		}
+		listOfUsers = append(listOfUsers, &user)
+	}
+	return listOfUsers, nil
+}
+
+//GetUserWithMeetups is ...
+func (db *Database) GetUserWithMeetups(userID *int) (*User, error) {
+	resRows, err := db.dbConn.Query(`
+		SELECT u.user_email, u.user_id, u.user_username, m.meetup_id, m.meetup_name, m.meetup_description
+		FROM "user_meetup" um
+		JOIN "user" u ON um.user_id = u.user_id
+		JOIN "meetup" m ON um.meetup_id = m.meetup_id
+		WHERE um.user_id = $1;
+	`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer resRows.Close()
+	listOfMeetups := []*Meetup{}
+	user := User{}
+	for resRows.Next() {
+		meetup := Meetup{}
+		err := resRows.Scan(&user.Email, &user.ID, &user.Username, &meetup.ID, &meetup.Name, &meetup.Description)
+		if err != nil {
+			return nil, err
+		}
+		listOfMeetups = append(listOfMeetups, &meetup)
+	}
+	user.Meetups = listOfMeetups
+	return &user, nil
 }
 
 /*InsertUserMeetup -

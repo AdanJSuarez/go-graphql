@@ -53,12 +53,13 @@ type ComplexityRoot struct {
 	Mutation struct {
 		CreateMeetup func(childComplexity int, input model.NewMeetup) int
 		CreateUser   func(childComplexity int, input model.NewUser) int
+		UpdateUser   func(childComplexity int, input model.UpdateUser) int
 	}
 
 	Query struct {
-		Meetup  func(childComplexity int) int
+		Meetup  func(childComplexity int, meetupID int) int
 		Meetups func(childComplexity int) int
-		User    func(childComplexity int) int
+		User    func(childComplexity int, userID *int) int
 		Users   func(childComplexity int) int
 	}
 
@@ -73,12 +74,13 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateMeetup(ctx context.Context, input model.NewMeetup) (*model.Meetup, error)
 	CreateUser(ctx context.Context, input model.NewUser) (*model.User, error)
+	UpdateUser(ctx context.Context, input model.UpdateUser) (*model.User, error)
 }
 type QueryResolver interface {
 	Meetups(ctx context.Context) ([]*model.Meetup, error)
 	Users(ctx context.Context) ([]*model.User, error)
-	Meetup(ctx context.Context) (*model.Meetup, error)
-	User(ctx context.Context) (*model.User, error)
+	Meetup(ctx context.Context, meetupID int) (*model.Meetup, error)
+	User(ctx context.Context, userID *int) (*model.User, error)
 }
 
 type executableSchema struct {
@@ -148,12 +150,29 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(model.NewUser)), true
 
+	case "Mutation.updateUser":
+		if e.complexity.Mutation.UpdateUser == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["input"].(model.UpdateUser)), true
+
 	case "Query.meetup":
 		if e.complexity.Query.Meetup == nil {
 			break
 		}
 
-		return e.complexity.Query.Meetup(childComplexity), true
+		args, err := ec.field_Query_meetup_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Meetup(childComplexity, args["meetupID"].(int)), true
 
 	case "Query.meetups":
 		if e.complexity.Query.Meetups == nil {
@@ -167,7 +186,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.User(childComplexity), true
+		args, err := ec.field_Query_user_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.User(childComplexity, args["userID"].(*int)), true
 
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
@@ -289,8 +313,8 @@ type Meetup {
 type Query {
     meetups: [Meetup!]!
     users: [User!]!
-    meetup: Meetup!
-    user: User!
+    meetup(meetupID: Int!): Meetup!
+    user(userID: Int): User!
 }
 
 input NewMeetup {
@@ -301,10 +325,16 @@ input NewUser {
     name: String!
     email: String!
 }
+input UpdateUser {
+    id: Int!
+    name: String!
+    email: String!
+}
 
 type Mutation {
     createMeetup(input: NewMeetup!):Meetup!
     createUser(input: NewUser!):User!
+    updateUser(input: UpdateUser!):User!
 }
 `, BuiltIn: false},
 }
@@ -344,6 +374,21 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdateUser
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateUser2githubᚗcomᚋAdanJSuarezᚋgoᚑgraphqlᚋgraphᚋmodelᚐUpdateUser(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -356,6 +401,36 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_meetup_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int
+	if tmp, ok := rawArgs["meetupID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("meetupID"))
+		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["meetupID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *int
+	if tmp, ok := rawArgs["userID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+		arg0, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userID"] = arg0
 	return args, nil
 }
 
@@ -621,6 +696,48 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 	return ec.marshalNUser2ᚖgithubᚗcomᚋAdanJSuarezᚋgoᚑgraphqlᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateUser_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateUser(rctx, args["input"].(model.UpdateUser))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖgithubᚗcomᚋAdanJSuarezᚋgoᚑgraphqlᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_meetups(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -707,9 +824,16 @@ func (ec *executionContext) _Query_meetup(ctx context.Context, field graphql.Col
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_meetup_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Meetup(rctx)
+		return ec.resolvers.Query().Meetup(rctx, args["meetupID"].(int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -742,9 +866,16 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_user_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().User(rctx)
+		return ec.resolvers.Query().User(rctx, args["userID"].(*int))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2115,6 +2246,42 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateUser(ctx context.Context, obj interface{}) (model.UpdateUser, error) {
+	var it model.UpdateUser
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "email":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			it.Email, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2187,6 +2354,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "createUser":
 			out.Values[i] = ec._Mutation_createUser(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateUser":
+			out.Values[i] = ec._Mutation_updateUser(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2604,6 +2776,21 @@ func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.Selec
 	return res
 }
 
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
 func (ec *executionContext) marshalNMeetup2githubᚗcomᚋAdanJSuarezᚋgoᚑgraphqlᚋgraphᚋmodelᚐMeetup(ctx context.Context, sel ast.SelectionSet, v model.Meetup) graphql.Marshaler {
 	return ec._Meetup(ctx, sel, &v)
 }
@@ -2678,6 +2865,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUpdateUser2githubᚗcomᚋAdanJSuarezᚋgoᚑgraphqlᚋgraphᚋmodelᚐUpdateUser(ctx context.Context, v interface{}) (model.UpdateUser, error) {
+	res, err := ec.unmarshalInputUpdateUser(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNUser2githubᚗcomᚋAdanJSuarezᚋgoᚑgraphqlᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v model.User) graphql.Marshaler {
@@ -2982,6 +3174,21 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalInt(*v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

@@ -19,6 +19,15 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 	panic(fmt.Errorf("not implemented"))
 }
 
+func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUser) (*model.User, error) {
+	user := model.User{ID: fmt.Sprint(input.ID), Username: input.Name, Email: input.Email}
+	_, err := r.DB.UpdateUser(&user)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 func (r *queryResolver) Meetups(ctx context.Context) ([]*model.Meetup, error) {
 	meetups, err := r.DB.GetMeetups()
 	if err != nil {
@@ -28,15 +37,23 @@ func (r *queryResolver) Meetups(ctx context.Context) ([]*model.Meetup, error) {
 }
 
 func (r *queryResolver) Users(ctx context.Context) ([]*model.User, error) {
+	users, err := r.DB.GetUsers()
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (r *queryResolver) Meetup(ctx context.Context, meetupID int) (*model.Meetup, error) {
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Meetup(ctx context.Context) (*model.Meetup, error) {
-	panic(fmt.Errorf("not implemented"))
-}
-
-func (r *queryResolver) User(ctx context.Context) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+func (r *queryResolver) User(ctx context.Context, userID *int) (*model.User, error) {
+	user, err := r.DB.GetUserWithMeetups(userID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.
