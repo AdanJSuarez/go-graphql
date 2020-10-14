@@ -33,24 +33,45 @@ func (db Database) Getdb() *sql.DB {
 }
 
 // InsertUser is ...
-func (db *Database) InsertUser(userName string, email string) {
-	_, errUser := db.dbConn.Query(`INSERT INTO "user"(user_username, user_email) VALUES ($1, $2);`, userName, email)
+func (db *Database) InsertUser(userName string, email string) (*User, error) {
+	user := User{Username: userName, Email: email}
+	resErr, errUser := db.dbConn.Query(`INSERT INTO "user"(user_username, user_email) VALUES ($1, $2) RETURNING user_id;`, userName, email)
 	if errUser != nil {
 		log.Println("Error inserting user:", errUser)
+		return nil, errUser
 	}
+	defer resErr.Close()
+	for resErr.Next() {
+		err := resErr.Scan(&user.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &user, nil
 }
 
 // InsertMeetup is ...
-func (db *Database) InsertMeetup(name string, description string) {
-	_, errMeetup := db.dbConn.Query(`INSERT INTO "meetup"(meetup_name, meetup_description) VALUES($1, $2);`, name, description)
+func (db *Database) InsertMeetup(name string, description string) (*Meetup, error) {
+	meetup := Meetup{Name: name, Description: description}
+	resErr, errMeetup := db.dbConn.Query(`INSERT INTO "meetup"(meetup_name, meetup_description) VALUES($1, $2) RETURNING meetup_id;`, name, description)
 	if errMeetup != nil {
 		log.Println("Error inserting user:", errMeetup)
+		return nil, errMeetup
 	}
+	defer resErr.Close()
+	for resErr.Next() {
+		err := resErr.Scan(&meetup.ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &meetup, nil
 }
 
 // UpdateUser is ...
 func (db *Database) UpdateUser(user *User) (*User, error) {
-	resRow, err := db.dbConn.Query(`UPDATE "user" SET user_username=$1 user_email=$2 WHERE user_id=$3`, user.Username, user.Email, user.ID)
+	log.Println(user)
+	resRow, err := db.dbConn.Query(`UPDATE "user" SET user_username=$1, user_email=$2 WHERE user_id=$3;`, user.Username, user.Email, user.ID)
 	if err != nil {
 		return user, err
 	}

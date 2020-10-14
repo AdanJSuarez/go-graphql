@@ -12,15 +12,23 @@ import (
 )
 
 func (r *mutationResolver) CreateMeetup(ctx context.Context, input model.NewMeetup) (*model.Meetup, error) {
-	panic(fmt.Errorf("not implemented"))
+	meetup, err := r.DB.InsertMeetup(input.Name, input.Description)
+	if err != nil {
+		return nil, err
+	}
+	return meetup, nil
 }
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (*model.User, error) {
-	panic(fmt.Errorf("not implemented"))
+	user, err := r.DB.InsertUser(input.Name, input.Email)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
-func (r *mutationResolver) UpdateUser(ctx context.Context, input model.UpdateUser) (*model.User, error) {
-	user := model.User{ID: fmt.Sprint(input.ID), Username: input.Name, Email: input.Email}
+func (r *mutationResolver) UpdateUser(ctx context.Context, id int, input model.NewUser) (*model.User, error) {
+	user := model.User{ID: fmt.Sprint(id), Username: input.Name, Email: input.Email}
 	_, err := r.DB.UpdateUser(&user)
 	if err != nil {
 		return nil, err
