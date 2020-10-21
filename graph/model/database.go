@@ -48,7 +48,6 @@ func (db *Database) InsertUser(userName string, email string) (*User, error) {
 		}
 	}
 	return &user, nil
-
 }
 
 // InsertMeetup is ...
